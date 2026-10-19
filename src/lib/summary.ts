@@ -106,11 +106,11 @@ const outSchema = z.object({ summary: z.string().min(1), actions: z.array(z.stri
 
 export class AnthropicSummarizer implements Summarizer {
   private client: Anthropic;
-  constructor(apiKey: string, private model = "claude-sonnet-4-5") { this.client = new Anthropic({ apiKey }); }
+  constructor(apiKey: string, private model = "claude-sonnet-5-5") { this.client = new Anthropic({ apiKey }); }
   async summarize(facts: SummaryFacts) {
     const res = await this.client.messages.create({
       model: this.model,
-      max_tokens: 700,
+      max_tokens: 2000,
       system:
         "You write weekly summaries for a home-service business owner. Use plain English, no jargon. " +
         "Use ONLY numbers that appear in the JSON facts; never calculate, estimate or invent any number. " +
@@ -124,7 +124,7 @@ export class AnthropicSummarizer implements Summarizer {
 
 export function getSummarizer(): Summarizer {
   const { DEMO_MODE, ANTHROPIC_API_KEY, ANTHROPIC_MODEL } = process.env;
-  return DEMO_MODE === "true" || !ANTHROPIC_API_KEY ? new MockSummarizer() : new AnthropicSummarizer(ANTHROPIC_API_KEY, ANTHROPIC_MODEL);
+  return DEMO_MODE === "true" || !ANTHROPIC_API_KEY ? new MockSummarizer() : new AnthropicSummarizer(ANTHROPIC_API_KEY, ANTHROPIC_MODEL || undefined);
 }
 
 /** Ask the model (up to 2 tries); anything that fails the number guard is discarded for the template. */
