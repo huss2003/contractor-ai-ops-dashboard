@@ -77,6 +77,7 @@ Types: `call.missed`, `call.answered`, `sms.sent`, `lead.created`, `booking.crea
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | no | Use Supabase Postgres; unset = seeded in-memory store. |
 | `ANTHROPIC_API_KEY` | no | Real summaries (ignored when `DEMO_MODE=true`). |
 | `ANTHROPIC_MODEL` | no | Defaults to `claude-sonnet-5-5`. |
+| `ANTHROPIC_BASE_URL` | no | Optional Anthropic-compatible endpoint (read by the SDK), e.g. local llama.cpp. |
 
 ## Metric definitions
 
