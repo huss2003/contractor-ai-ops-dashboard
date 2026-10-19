@@ -9,11 +9,17 @@ export function safeEqual(a: string, b: string): boolean {
   return x.length === y.length && timingSafeEqual(x, y);
 }
 
-/** Webhook signature header value: `sha256=<hex hmac of the raw body>`. */
-export const signBody = (secret: string, body: string) => `sha256=${hmacHex(secret, body)}`;
+export const REPLAY_WINDOW_SEC = 300;
 
-export function verifySignature(secret: string, body: string, header: string | null): boolean {
-  return !!header && safeEqual(signBody(secret, body), header.trim());
+/** Webhook signature header value: `sha256=<hex hmac of "<timestamp>.<raw body>">`. */
+export const signBody = (secret: string, body: string, ts: string | number) => `sha256=${hmacHex(secret, `${ts}.${body}`)}`;
+
+/** Timestamp (unix seconds) must be within the replay window; the signature binds it to the body. */
+export function verifySignature(
+  secret: string, body: string, header: string | null, ts: string | null, nowSec = Date.now() / 1000,
+): boolean {
+  if (!header || !ts || !/^\d{1,12}$/.test(ts) || Math.abs(nowSec - Number(ts)) > REPLAY_WINDOW_SEC) return false;
+  return safeEqual(signBody(secret, body, ts), header.trim());
 }
 
 /** Signed demo session cookie: `<orgId>.<expEpochSec>.<hmac>`. */

@@ -20,6 +20,7 @@ export interface IngestRequest {
   orgId: string | null;
   rawBody: string;
   signature: string | null;
+  timestamp: string | null;
   idempotencyKey: string | null;
 }
 
@@ -27,7 +28,7 @@ export interface IngestRequest {
 export async function ingest(repo: Repo, req: IngestRequest): Promise<{ status: number; body: object }> {
   const org = req.orgId ? await repo.getOrg(req.orgId) : null;
   // Same response for unknown org and bad signature: no tenant enumeration.
-  if (!org || !verifySignature(org.webhookSecret, req.rawBody, req.signature)) {
+  if (!org || !verifySignature(org.webhookSecret, req.rawBody, req.signature, req.timestamp)) {
     return { status: 401, body: { error: "invalid signature" } };
   }
   if (!req.idempotencyKey || req.idempotencyKey.length > 200) {

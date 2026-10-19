@@ -40,9 +40,10 @@ Send a signed event:
 
 ```bash
 BODY='{"type":"job.completed","contact_id":"c-123","source":"lsa","value":420}'
-SIG="sha256=$(printf %s "$BODY" | openssl dgst -sha256 -hmac demo-secret-summit | awk '{print $2}')"
+TS=$(date +%s)
+SIG="sha256=$(printf %s "$TS.$BODY" | openssl dgst -sha256 -hmac demo-secret-summit | awk '{print $2}')"
 curl -X POST localhost:3000/api/events \
-  -H "X-Org-Id: 00000000-0000-0000-0000-000000000001" -H "X-Signature: $SIG" \
+  -H "X-Org-Id: 00000000-0000-0000-0000-000000000001" -H "X-Timestamp: $TS" -H "X-Signature: $SIG" \
   -H "Idempotency-Key: job-123" -d "$BODY"
 # 201 created; repeat the same call -> 200 {"duplicate":true}
 ```
@@ -57,13 +58,13 @@ Trigger the weekly summary: `curl -H "Authorization: Bearer $CRON_SECRET" localh
 
 ## Events API
 
-`POST /api/events` with headers `X-Org-Id`, `X-Signature: sha256=<hex HMAC-SHA256 of the raw body, keyed by the org's webhook secret>` and `Idempotency-Key`.
+`POST /api/events` with headers `X-Org-Id`, `X-Timestamp` (unix seconds, within 5 minutes of server time), `X-Signature: sha256=<hex HMAC-SHA256 of "<timestamp>.<raw body>", keyed by the org's webhook secret>` and `Idempotency-Key`.
 
 ```json
 { "type": "call.missed", "contact_id": "c-9", "source": "google_ads", "occurred_at": "2026-03-01T10:00:00Z" }
 ```
 
-Types: `call.missed`, `call.answered`, `sms.sent`, `lead.created`, `booking.created`, `job.completed` (requires `value` in dollars), `review.requested`. Responses: `201` stored, `200` duplicate key, `400` missing key/bad JSON, `401` bad signature or unknown org (same response, no tenant enumeration), `422` invalid payload.
+Types: `call.missed`, `call.answered`, `sms.sent`, `lead.created`, `booking.created`, `job.completed` (requires `value` in dollars), `review.requested`. Responses: `201` stored, `200` duplicate key, `400` missing key/bad JSON, `401` bad/expired signature or unknown org (same response, no tenant enumeration), `422` invalid payload.
 
 ## Environment
 
@@ -75,7 +76,7 @@ Types: `call.missed`, `call.answered`, `sms.sent`, `lead.created`, `booking.crea
 | `CRON_SECRET` | for cron | Bearer token required by `/api/cron/weekly`. |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | no | Use Supabase Postgres; unset = seeded in-memory store. |
 | `ANTHROPIC_API_KEY` | no | Real summaries (ignored when `DEMO_MODE=true`). |
-| `ANTHROPIC_MODEL` | no | Defaults to `claude-sonnet-4-5`. |
+| `ANTHROPIC_MODEL` | no | Defaults to `claude-sonnet-5-5`. |
 
 ## Metric definitions
 
